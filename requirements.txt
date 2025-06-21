@@ -1,3 +1,5 @@
 folium
 streamlit_folium
 yfinance
+plotly.graph_objects
+datetime
