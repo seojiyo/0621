@@ -23,7 +23,7 @@ df = df.rename(columns={
     '시설총규모': 'size'
 })
 
-# 좌표 변환
+# 좌표계 변환
 proj_5174 = pyproj.CRS("EPSG:5174")
 proj_4326 = pyproj.CRS("EPSG:4326")
 transformer = pyproj.Transformer.from_crs(proj_5174, proj_4326, always_xy=True)
@@ -42,20 +42,22 @@ def assign_group(row):
 
 df["group"] = df.apply(assign_group, axis=1)
 
-# 🔘 UI 요소
+# 체크박스 설정 (기본값: 모두 False)
 col1, col2, col3 = st.columns(3)
 with col1:
-    show_closed = st.checkbox("폐업 제과점 표시", value=True)
+    show_closed = st.checkbox("폐업 제과점 표시", value=False)
 with col2:
-    show_franchise = st.checkbox("프랜차이즈 표시", value=True)
+    show_franchise = st.checkbox("프랜차이즈 표시", value=False)
 with col3:
-    use_color_by_size = st.checkbox("규모별 색상 표현", value=True)
+    use_color_by_size = st.checkbox("규모별 색상 표현", value=False)
 
 # 필터링
-df = df[df["status"] != "폐업"] if not show_closed else df
-df = df[df["group"] != "프랜차이즈"] if not show_franchise else df
+if not show_closed:
+    df = df[df["status"] != "폐업"]
+if not show_franchise:
+    df = df[df["group"] != "프랜차이즈"]
 
-# 색상 맵핑
+# 색상 설정
 if use_color_by_size:
     color_map = {
         "소형 빵집": "orange",
@@ -64,11 +66,12 @@ if use_color_by_size:
         "프랜차이즈": "red"
     }
 else:
+    # 모든 그룹에 파란색 적용
     color_map = {
-        "소형 빵집": "gray",
-        "중형 빵집": "gray",
-        "대형 빵집": "gray",
-        "프랜차이즈": "gray"
+        "소형 빵집": "blue",
+        "중형 빵집": "blue",
+        "대형 빵집": "blue",
+        "프랜차이즈": "blue"
     }
 
 # 툴팁 구성
@@ -83,7 +86,12 @@ fig = px.scatter_mapbox(
     color="group",
     color_discrete_map=color_map,
     hover_name="hover_name",
-    hover_data={"hover_address": True, "group": False, "lat": False, "lon": False},
+    hover_data={
+        "hover_address": True,
+        "group": False,
+        "lat": False,
+        "lon": False
+    },
     zoom=6,
     center={"lat": 36.5, "lon": 127.8},
     height=700
@@ -92,5 +100,5 @@ fig = px.scatter_mapbox(
 fig.update_layout(mapbox_style="open-street-map")
 fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
 
-# 지도 출력
+# 출력
 st.plotly_chart(fig, use_container_width=True)
