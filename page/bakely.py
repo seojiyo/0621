@@ -27,7 +27,7 @@ proj_4326 = pyproj.CRS("EPSG:4326")
 transformer = pyproj.Transformer.from_crs(proj_5174, proj_4326, always_xy=True)
 df["lon"], df["lat"] = transformer.transform(df["x_5174"].values, df["y_5174"].values)
 
-# 색상 컬럼 생성
+# 색상 라벨 지정
 def assign_color(row):
     if "파리바게뜨" in row["name"] or "뚜레주르" in row["name"]:
         return "프랜차이즈"
@@ -36,37 +36,58 @@ def assign_color(row):
     else:
         return "일반제과점"
 
-df["marker_color"] = df.apply(assign_color, axis=1)
+df["marker_group"] = df.apply(assign_color, axis=1)
 
-# 상태 저장을 위한 기본 zoom & center (한반도 중앙 기준)
+# 상태 저장을 위한 기본 zoom & center
 if "zoom" not in st.session_state:
     st.session_state.zoom = 6
 if "center" not in st.session_state:
     st.session_state.center = {"lat": 36.5, "lon": 127.8}
 
-# 체크박스 설정
-show_closed = st.checkbox("폐업한 제과점도 지도에 표시하기", value=False)
+# 체크박스 UI
+col1, col2 = st.columns(2)
+with col1:
+    show_closed = st.checkbox("폐업 제과점도 지도에 표시하기", value=False)
+with col2:
+    show_franchise = st.checkbox("프랜차이즈(파리바게뜨·뚜레주르) 지도에 표시하기", value=True)
 
-# 지도용 데이터 필터링
+# 시각화용 데이터 필터링
+filtered = df.copy()
+
 if not show_closed:
-    df_map = df[df["status"] == "영업/정상"]
-    df_map = df_map[df_map["marker_color"] != "폐업"]
-else:
-    df_map = df.copy()
+    filtered = filtered[filtered["marker_group"] != "폐업"]
+if not show_franchise:
+    filtered = filtered[filtered["marker_group"] != "프랜차이즈"]
+
+# 색상 매핑
+color_map = {
+    "프랜차이즈": "rgb(0,255,0)",
+    "폐업": "rgb(120,120,120)",
+    "일반제과점": "blue"
+}
+
+# 툴팁 제한: 표시된 마커만 정보 제공
+filtered["hover_name"] = filtered["name"]
+filtered["hover_address"] = filtered["address"]
+filtered["show_tooltip"] = True
+
+if not show_closed:
+    filtered.loc[filtered["marker_group"] == "폐업", "show_tooltip"] = False
+if not show_franchise:
+    filtered.loc[filtered["marker_group"] == "프랜차이즈", "show_tooltip"] = False
+
+filtered.loc[~filtered["show_tooltip"], "hover_name"] = ""
+filtered.loc[~filtered["show_tooltip"], "hover_address"] = ""
 
 # 지도 시각화
 fig = px.scatter_mapbox(
-    df_map,
+    filtered,
     lat="lat",
     lon="lon",
-    hover_name="name",
-    hover_data=["address", "status"],
-    color="marker_color",
-    color_discrete_map={
-        "프랜차이즈": "rgb(0,255,0)",    # 초록색
-        "폐업": "rgb(120,120,120)",     # 회색
-        "일반제과점": "blue"
-    },
+    color="marker_group",
+    color_discrete_map=color_map,
+    hover_name="hover_name",
+    hover_data={"hover_address": True, "marker_group": False, "lat": False, "lon": False},
     zoom=st.session_state.zoom,
     center=st.session_state.center,
     height=700
