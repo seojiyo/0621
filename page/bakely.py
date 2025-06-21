@@ -28,7 +28,7 @@ transformer = pyproj.Transformer.from_crs(proj_5174, proj_4326, always_xy=True)
 df["lon"], df["lat"] = transformer.transform(df["x_5174"].values, df["y_5174"].values)
 
 # 색상 라벨 지정
-def assign_color(row):
+def assign_group(row):
     if "파리바게뜨" in row["name"] or "뚜레주르" in row["name"]:
         return "프랜차이즈"
     elif row["status"] == "폐업":
@@ -36,58 +36,50 @@ def assign_color(row):
     else:
         return "일반제과점"
 
-df["marker_group"] = df.apply(assign_color, axis=1)
+df["group"] = df.apply(assign_group, axis=1)
 
-# 상태 저장을 위한 기본 zoom & center
+# 체크박스 UI
+col1, col2 = st.columns(2)
+with col1:
+    show_closed = st.checkbox("폐업 제과점 표시", value=False)
+with col2:
+    show_franchise = st.checkbox("프랜차이즈(파리바게뜨·뚜레주르) 표시", value=True)
+
+# 상태 저장용 초기 중심
 if "zoom" not in st.session_state:
     st.session_state.zoom = 6
 if "center" not in st.session_state:
     st.session_state.center = {"lat": 36.5, "lon": 127.8}
 
-# 체크박스 UI
-col1, col2 = st.columns(2)
-with col1:
-    show_closed = st.checkbox("폐업 제과점도 지도에 표시하기", value=False)
-with col2:
-    show_franchise = st.checkbox("프랜차이즈(파리바게뜨·뚜레주르) 지도에 표시하기", value=True)
+# 지도용 데이터 필터링
+filter_conditions = ["일반제과점"]
+if show_closed:
+    filter_conditions.append("폐업")
+if show_franchise:
+    filter_conditions.append("프랜차이즈")
 
-# 시각화용 데이터 필터링
-filtered = df.copy()
+filtered = df[df["group"].isin(filter_conditions)].copy()
 
-if not show_closed:
-    filtered = filtered[filtered["marker_group"] != "폐업"]
-if not show_franchise:
-    filtered = filtered[filtered["marker_group"] != "프랜차이즈"]
-
-# 색상 매핑
+# 색상 지정
 color_map = {
     "프랜차이즈": "rgb(0,255,0)",
     "폐업": "rgb(120,120,120)",
     "일반제과점": "blue"
 }
 
-# 툴팁 제한: 표시된 마커만 정보 제공
+# 툴팁 제한: 표시된 데이터만 툴팁 활성화
 filtered["hover_name"] = filtered["name"]
 filtered["hover_address"] = filtered["address"]
-filtered["show_tooltip"] = True
-
-if not show_closed:
-    filtered.loc[filtered["marker_group"] == "폐업", "show_tooltip"] = False
-if not show_franchise:
-    filtered.loc[filtered["marker_group"] == "프랜차이즈", "show_tooltip"] = False
-
-filtered.loc[~filtered["show_tooltip"], "hover_name"] = ""
-filtered.loc[~filtered["show_tooltip"], "hover_address"] = ""
 
 # 지도 시각화
 fig = px.scatter_mapbox(
     filtered,
     lat="lat",
     lon="lon",
-    color="marker_group",
+    color="group",
     color_discrete_map=color_map,
     hover_name="hover_name",
-    hover_data={"hover_address": True, "marker_group": False, "lat": False, "lon": False},
+    hover_data={"hover_address": True, "group": False, "lat": False, "lon": False},
     zoom=st.session_state.zoom,
     center=st.session_state.center,
     height=700
