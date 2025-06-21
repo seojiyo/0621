@@ -61,7 +61,7 @@ if not show_franchise:
 if use_color_by_size:
     color_map = {
         "소형 빵집": "orange",
-        "중형 빵집": "skyblue",
+        "중형 빵집": "blue",
         "대형 빵집": "darkblue",
         "프랜차이즈": "red"
     }
