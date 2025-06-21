@@ -64,13 +64,13 @@ color_map = {
 # 마커 크기 설정
 def marker_size(row):
     if row["group"] == "프랜차이즈":
-        return 20
+        return 1.5
     elif row["size"] < 50:
-        return 10
+        return 1
     elif row["size"] < 100:
-        return 15
+        return 1.5
     else:
-        return 20
+        return 2
 
 df["marker_size"] = df.apply(marker_size, axis=1)
 
