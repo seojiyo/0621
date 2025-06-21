@@ -131,8 +131,7 @@ mbti_data = {
 st.markdown("<h1>✨ MBTI 진로 탐험대 🚀</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size: 1.3em; color: #6A5ACD;'>👋 반가워요! 당신의 잠재력을 찾아줄 MBTI 진로 탐험 🗺️에 오신 것을 환영합니다! 🎉</p>", unsafe_allow_html=True)
 
-st.image("https://images.unsplash.com/photo-1543269865-cbf427352390?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-         caption="💡 당신의 잠재력을 찾아보세요!", use_column_width=True)
+st.image("https://images.unsplash.com/photo-1543269865-cbf427352390?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",caption="💡 당신의 잠재력을 찾아보세요!", use_container_width=True) #
 
 st.markdown("---")
 
