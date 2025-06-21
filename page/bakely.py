@@ -6,13 +6,14 @@ import pyproj
 # Streamlit 설정
 st.set_page_config(layout="wide")
 st.title("🥐 전국 빵집 지도 시각화")
-st.markdown("🗺️ 제과점의 영업상태, 프랜차이즈 여부, 시설 규모별로 색상을 다르게 표현합니다.")
+st.markdown("🗺️ 제과점의 영업상태, 프랜차이즈 여부, 시설 규모별로 색상과 크기를 다르게 표현합니다.")
 
 # 데이터 불러오기
 df = pd.read_csv("bakery.csv", encoding="cp949")
 
 # 전처리
 df = df.dropna(subset=["좌표정보x(epsg5174)", "좌표정보y(epsg5174)", "시설총규모"])
+df = df[df["시설총규모"] > 0]  # 시설총규모가 0인 항목 제거
 df = df.rename(columns={
     '사업장명': 'name',
     '도로명전체주소': 'address',
@@ -60,6 +61,19 @@ color_map = {
     "소형 빵집": "#b3dbff"      # 하늘색
 }
 
+# 마커 크기 설정
+def marker_size(row):
+    if row["group"] == "프랜차이즈":
+        return 20
+    elif row["size"] < 50:
+        return 10
+    elif row["size"] < 100:
+        return 15
+    else:
+        return 20
+
+df["marker_size"] = df.apply(marker_size, axis=1)
+
 # 툴팁 구성
 df["hover_name"] = df["name"]
 df["hover_address"] = df["address"]
@@ -71,15 +85,17 @@ fig = px.scatter_mapbox(
     lon="lon",
     color="group",
     color_discrete_map=color_map,
+    size="marker_size",
+    size_max=30,
     hover_name="hover_name",
-    hover_data={"hover_address": True, "group": False, "lat": False, "lon": False},
+    hover_data={"hover_address": True, "group": False, "lat": False, "lon": False, "marker_size": False},
     zoom=6,
     center={"lat": 36.5, "lon": 127.8},
     height=700
 )
 
 fig.update_layout(mapbox_style="open-street-map")
-fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
 
 # 지도 출력
 st.plotly_chart(fig, use_container_width=True)
